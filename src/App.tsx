@@ -1,17 +1,72 @@
+import React, { useState, useEffect } from "react";
+import RecipeTagList from "./RecipeTagList";
+import RecipeList from "./RecipeList";
+import { IRecipe } from "./Recipe"; // Import IRecipe interface
 
 const App = () => {
+  const [tags, setTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [recipes, setRecipes] = useState<IRecipe[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
+  useEffect(() => {
+    const fetchTags = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch("https://dummyjson.com/recipes/tags");
+        const data = await response.json();
+        setTags(data);
+      } catch (error) {
+        console.error("Failed to fetch tags:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTags();
+  }, []);
+
+  useEffect(() => {
+    const fetchRecipesByTag = async () => {
+      if (!selectedTag) return;
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `https://dummyjson.com/recipes/tag/${selectedTag}`
+        );
+        const data = await response.json();
+        setRecipes(data.recipes);
+      } catch (error) {
+        console.error("Failed to fetch recipes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipesByTag();
+  }, [selectedTag]);
+
+  const handleSelectTag = (tagName: string) => {
+    setSelectedTag(tagName);
+  };
+
+  const handleBackToTags = () => {
+    setSelectedTag(null);
+    setRecipes([]);
+  };
 
   return (
     <div>
-        <h1>ACME Recipe O'Master</h1>
-        <div>Remove this and implement recipe tag list here. </div>
-        <ul>
-        <li>On start the application displays a list of recipe tags such as 'pasta', 'cookies' etc. The tag information is loaded from an API (https://dummyjson.com/recipes/tags)</li>
-        <li> The user can click on a tag and the application will then hide the tag list and display a list of recipes matching the selected tag. The recipe information for the clicked tag is loaded from an API (https://dummyjson.com/recipes/tag/Pizza).</li>
-        <li> User can also go back to the tag list. </li>
-        <li> Each receipe is displayed as box where recipe data such as ingredients and instructions are displayed</li>
-        </ul>
+      <h1>ACME Recipe O'Master</h1>
+      {loading && <p>Loading...</p>}
+      {!selectedTag ? (
+        <RecipeTagList tagList={tags} onSelectTag={handleSelectTag} />
+      ) : (
+        <>
+          <button onClick={handleBackToTags}>Back to Tags</button>
+          <RecipeList recipes={recipes} />
+        </>
+      )}
     </div>
   );
 };
